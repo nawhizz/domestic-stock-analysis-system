@@ -3,8 +3,6 @@
 **Python + Flask + Tailwind CSS** 기반의 국내 주식(KOSPI, KOSDAQ) 자동 분석 및 시각화 시스템입니다.
 Wave Theory(파동 이론)와 Market Regime(시장 체제) 분석을 통해 유망 종목을 발굴하고, 웹 대시보드를 통해 직관적으로 시각화합니다.
 
-![Dashboard Preview](docs/dashboard_preview.webp)
-*(대시보드 스크린샷 위치)*
 
 ## 🚀 주요 기능 (Key Features)
 
