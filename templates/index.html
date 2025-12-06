@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            rounded: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col overflow-hidden">
+    <!-- Header -->
+    <header class="h-14 border-b border-[#2a2a2a] flex items-center px-4 justify-between bg-[#1a1a1a]">
+        <div class="flex items-center gap-2">
+            <span class="text-xl font-bold text-blue-500">ANTIGRAVITY</span>
+            <span class="text-xs text-gray-500 px-2 py-0.5 border border-[#333] rounded">BETA</span>
+        </div>
+        <button onclick="triggerAnalysis()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm transition-colors">
+            Run Analysis
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto p-4 bg-[#121212]">
+        <!-- Market Indices -->
+        <section class="mb-6">
+            <h2 class="text-sm font-bold text-gray-300 mb-2">Market Indices</h2>
+            <div id="market-indices-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Chart Section (Left) -->
+            <div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
+                <div class="flex-1 min-h-[400px] border border-[#2a2a2a] rounded p-4 relative flex flex-col">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <h2 class="text-sm font-bold text-gray-300">Price Chart</h2>
+                            <span id="summary-chart-ticker" class="text-xs text-blue-400 font-mono ml-2"></span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-[#1a1a1a] rounded p-0.5 border border-[#333]">
+                            <button onclick="setChartRange('1D')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="1D">1D</button>
+                            <button onclick="setChartRange('1W')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="1W">1W</button>
+                            <button onclick="setChartRange('1M')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="1M">1M</button>
+                            <button onclick="setChartRange('3M')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="3M">3M</button>
+                            <button onclick="setChartRange('6M')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="6M">6M</button>
+                            <button onclick="setChartRange('1Y')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-white bg-[#333] rounded"
+                                data-range="1Y">1Y</button>
+                            <button onclick="setChartRange('5Y')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="5Y">5Y</button>
+                            <button onclick="setChartRange('All')"
+                                class="chart-range-btn px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:text-white hover:bg-[#333] rounded"
+                                data-range="All">All</button>
+                        </div>
+                    </div>
+                    <div id="summary-chart-container" class="w-full relative h-[500px]"></div>
+                </div>
+            </div>
+
+            <!-- Recommendations List (Right) -->
+            <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+                <!-- Data Viewer Section -->
+                <div
+                    class="bg-[#1a1a1a] border border-[#2a2a2a] rounded p-4 h-[300px] overflow-hidden flex flex-col mb-4">
+                    <h2 class="text-sm font-bold text-gray-300 mb-4">Daily Data Checker <span id="data-checker-ticker"
+                            class="text-xs text-blue-400"></span></h2>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="text-gray-500 border-b border-[#333] sticky top-0 bg-[#1a1a1a]">
+                                <tr>
+                                    <th class="p-2">Date</th>
+                                    <th class="p-2 text-right">Close</th>
+                                    <th class="p-2 text-right">Vol</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-checker-body" class="text-gray-300 font-mono">
+                                <tr>
+                                    <td colspan="3" class="p-2 text-center text-gray-500">Select a stock to view data
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded p-4 flex-1 overflow-hidden flex flex-col">
+                    <h2 class="text-sm font-bold text-gray-300 mb-4">AI Recommendations</h2>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="text-xs text-gray-500 border-b border-[#333] sticky top-0 bg-[#1a1a1a]">
+                                <tr>
+                                    <th class="p-2">Ticker</th>
+                                    <th class="p-2 text-right">Price</th>
+                                    <th class="p-2 text-right">Return</th>
+                                    <th class="p-2 text-center">Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="holdings-table-body" class="text-sm text-gray-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Style Box Section -->
+                <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded p-4 flex flex-col h-[220px]">
+                    <h2 class="text-sm font-bold text-gray-300 mb-2">Portfolio Style Box</h2>
+                    <div class="flex-1 grid grid-cols-3 gap-1 text-xs">
+                        <!-- Headers -->
+                        <div class="text-center text-gray-500 self-center">Val</div>
+                        <div class="text-center text-gray-500 self-center">Core</div>
+                        <div class="text-center text-gray-500 self-center">Grw</div>
+
+                        <!-- Large -->
+                        <div id="large_value"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            L-V</div>
+                        <div id="large_core"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            L-C</div>
+                        <div id="large_growth"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            L-G</div>
+
+                        <!-- Mid -->
+                        <div id="mid_value"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            M-V</div>
+                        <div id="mid_core"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            M-C</div>
+                        <div id="mid_growth"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            M-G</div>
+
+                        <!-- Small -->
+                        <div id="small_value"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            S-V</div>
+                        <div id="small_core"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            S-C</div>
+                        <div id="small_growth"
+                            class="bg-[#222] flex items-center justify-center rounded border border-[#333] text-gray-400">
+                            S-G</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let summaryChart;
+        let summaryCandleSeries;
+        let summaryVolumeSeries;
+        let currentChartData = { candles: [], volumes: [] };
+        let currentRange = '1Y';
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch('/api/portfolio');
+                const data = await response.json();
+
+                if (data.market_indices) renderMarketIndices(data.market_indices);
+                if (data.top_holdings) {
+                    renderHoldingsTable(data.top_holdings);
+                    if (data.top_holdings.length > 0) {
+                        updateSummaryChart(data.top_holdings[0].ticker);
+                    }
+                }
+
+                // Update Style Box
+                if (data.style_box) updateStyleBox(data.style_box);
+            } catch (e) {
+                console.error("Error:", e);
+            }
+        }
+
+        function renderMarketIndices(indices) {
+            const container = document.getElementById('market-indices-container');
+            container.innerHTML = indices.map(idx => {
+                const colorClass = idx.color === 'red' ? 'text-[#FF4560]' : 'text-[#2962FF]';
+                return `
+                    <div class="bg-[#1a1a1a] border border-[#2a2a2a] rounded p-3 flex flex-col items-center justify-center hover:bg-[#252525] transition-colors">
+                        <span class="text-xs text-gray-400 mb-1">${idx.name}</span>
+                        <span class="text-lg font-bold text-white mb-1">${idx.price}</span>
+                        <span class="text-xs font-medium ${colorClass}">${idx.change} (${idx.change_pct.toFixed(2)}%)</span>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderHoldingsTable(holdings) {
+            const tbody = document.getElementById('holdings-table-body');
+            tbody.innerHTML = holdings.map(stock => {
+                const returnColor = stock.return_pct >= 0 ? 'text-red-400' : 'text-blue-400';
+                return `
+                    <tr class="border-b border-gray-800 hover:bg-gray-800 cursor-pointer" onclick="updateSummaryChart('${stock.ticker}')">
+                        <td class="p-2">
+                            <div class="font-bold text-white">${stock.name}</div>
+                            <div class="text-xs text-gray-500">${stock.ticker}</div>
+                        </td>
+                        <td class="p-2 text-right">${stock.price.toLocaleString()}</td>
+                        <td class="p-2 text-right ${returnColor}">${stock.return_pct.toFixed(1)}%</td>
+                        <td class="p-2 text-center">
+                            <span class="px-2 py-0.5 rounded bg-blue-900 text-blue-200 text-xs">${stock.grade}</span>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function updateStyleBox(boxData) {
+            if (!boxData) return;
+            const cells = [
+                'large_value', 'large_core', 'large_growth',
+                'mid_value', 'mid_core', 'mid_growth',
+                'small_value', 'small_core', 'small_growth'
+            ];
+
+            cells.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const val = boxData[id] || 0;
+                    el.innerText = val + '%';
+
+                    // Color scale
+                    if (val > 20) el.style.backgroundColor = '#1e3a8a'; // Blue-900
+                    else if (val > 10) el.style.backgroundColor = '#1e40af'; // Blue-800
+                    else if (val > 0) el.style.backgroundColor = '#2a2a2a';
+                    else {
+                        el.style.backgroundColor = '#222';
+                        el.innerText = ''; // Clear text if 0
+                    }
+                }
+            });
+        }
+
+        async function updateSummaryChart(ticker) {
+            const container = document.getElementById('summary-chart-container');
+            container.innerHTML = ''; // Clear
+
+            try {
+                const response = await fetch(`/api/stock/${ticker}`);
+                const data = await response.json();
+
+                document.getElementById('summary-chart-ticker').innerText = data.metrics.name || ticker;
+                document.getElementById('data-checker-ticker').innerText = `(${ticker})`;
+
+                // Render Data Table
+                const tbody = document.getElementById('data-checker-body');
+                if (data.price_history && data.price_history.length > 0) {
+                    tbody.innerHTML = data.price_history.slice().reverse().slice(0, 50).map(d => `
+                        <tr class="border-b border-gray-800 hover:bg-gray-800">
+                            <td class="p-1">${d.time}</td>
+                            <td class="p-1 text-right">${d.close.toLocaleString()}</td>
+                            <td class="p-1 text-right">${d.volume.toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" class="p-2 text-center text-gray-500">No data available</td></tr>';
+                }
+
+                currentChartData.candles = data.price_history;
+                currentChartData.volumes = data.price_history.map(d => ({ time: d.time, value: d.volume }));
+
+                summaryChart = LightweightCharts.createChart(container, {
+                    layout: { background: { color: '#121212' }, textColor: '#D1D5DB' },
+                    grid: { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } },
+                    width: container.clientWidth,
+                    height: container.clientHeight,
+                    handleScroll: false,
+                    handleScale: false,
+                });
+
+                if (!summaryChart) {
+                    console.error("Failed to create chart instance.");
+                    return;
+                }
+
+                summaryCandleSeries = summaryChart.addCandlestickSeries({
+                    upColor: '#EF4444', downColor: '#3B82F6', borderVisible: false, wickUpColor: '#EF4444', wickDownColor: '#3B82F6',
+                });
+                summaryVolumeSeries = summaryChart.addHistogramSeries({
+                    color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '',
+                });
+                summaryChart.priceScale('').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+
+                setChartRange(currentRange);
+
+                new ResizeObserver(entries => {
+                    if (entries[0].contentRect && summaryChart) {
+                        summaryChart.applyOptions({ width: entries[0].contentRect.width, height: entries[0].contentRect.height });
+                    }
+                }).observe(container);
+
+            } catch (e) {
+                console.error("Chart Error:", e);
+            }
+        }
+
+        function setChartRange(range) {
+            currentRange = range;
+            document.querySelectorAll('.chart-range-btn').forEach(btn => {
+                if (btn.dataset.range === range) {
+                    btn.classList.add('text-white', 'bg-[#333]');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.classList.remove('text-white', 'bg-[#333]');
+                    btn.classList.add('text-gray-400');
+                }
+            });
+
+            if (summaryChart && currentChartData.candles.length > 0) {
+                const filtered = filterDataByRange(currentChartData.candles, currentChartData.volumes, range);
+                summaryCandleSeries.setData(filtered.candles);
+                summaryVolumeSeries.setData(filtered.volumes);
+                summaryChart.timeScale().fitContent();
+            }
+        }
+
+        function filterDataByRange(candles, volumes, range) {
+            if (!candles || candles.length === 0) return { candles: [], volumes: [] };
+            if (range === 'All') return { candles, volumes };
+
+            const lastCandleTime = candles[candles.length - 1].time;
+            const lastDate = new Date(lastCandleTime);
+            let startDate = new Date(lastDate);
+
+            switch (range) {
+                case '1D': startDate.setDate(lastDate.getDate() - 1); break;
+                case '1W': startDate.setDate(lastDate.getDate() - 7); break;
+                case '1M': startDate.setMonth(lastDate.getMonth() - 1); break;
+                case '3M': startDate.setMonth(lastDate.getMonth() - 3); break;
+                case '6M': startDate.setMonth(lastDate.getMonth() - 6); break;
+                case '1Y': startDate.setFullYear(lastDate.getFullYear() - 1); break;
+                case '5Y': startDate.setFullYear(lastDate.getFullYear() - 5); break;
+            }
+
+            const startTime = startDate.getTime();
+            const filteredCandles = candles.filter(d => new Date(d.time).getTime() >= startTime);
+            const filteredVolumes = volumes.filter(d => new Date(d.time).getTime() >= startTime);
+
+            return { candles: filteredCandles, volumes: filteredVolumes };
+        }
+
+        async function triggerAnalysis() {
+            if (confirm("Run new analysis? This may take a few minutes.")) {
+                await fetch('/api/run-analysis', { method: 'POST' });
+                alert("Analysis started in background.");
+            }
+        }
+
+        // Init
+        updateDashboard();
+    </script>
+</body>
+
+</html>
